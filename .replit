@@ -1,0 +1,20 @@
+run = "bash start.sh"
+entrypoint = "backend/main.py"
+
+[nix]
+channel = "stable-24_05"
+
+[env]
+PYTHONUNBUFFERED = "1"
+
+[[ports]]
+localPort = 8000
+externalPort = 80
+
+[[ports]]
+localPort = 5173
+externalPort = 3000
+
+[deployment]
+run = ["bash", "start.sh"]
+deploymentTarget = "cloudrun"

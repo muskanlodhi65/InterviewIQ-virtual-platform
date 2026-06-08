@@ -1,0 +1,86 @@
+[
+  {
+    "id": "sde-001",
+    "role": "SDE",
+    "category": "Behavioral",
+    "prompt": "Tell me about a time you disagreed with a teammate on a technical decision. How did you handle it?",
+    "ideal_answer_points": [
+      "describe the specific situation and technical disagreement",
+      "explain the task or goal you were both trying to achieve",
+      "describe the action you took to resolve the disagreement, such as data-driven discussion or compromise",
+      "share the result and what you learned about collaboration"
+    ]
+  },
+  {
+    "id": "sde-002",
+    "role": "SDE",
+    "category": "Technical",
+    "prompt": "How would you design a URL shortening service like bit.ly?",
+    "ideal_answer_points": [
+      "discuss the API design for shortening and redirecting URLs",
+      "explain the encoding scheme such as base62 for generating short codes",
+      "cover database schema and read-heavy scaling with caching",
+      "mention analytics tracking and handling collisions"
+    ]
+  },
+  {
+    "id": "sde-003",
+    "role": "SDE",
+    "category": "Behavioral",
+    "prompt": "Describe a project where you had to learn a new technology quickly to meet a deadline.",
+    "ideal_answer_points": [
+      "situation describing the deadline pressure and unfamiliar technology",
+      "task you needed to accomplish",
+      "action taken to learn quickly, such as documentation, tutorials, or asking mentors",
+      "result achieved and how it impacted the project"
+    ]
+  },
+  {
+    "id": "ds-001",
+    "role": "Data Science",
+    "category": "Technical",
+    "prompt": "Explain the bias-variance tradeoff and how you would diagnose it in a model.",
+    "ideal_answer_points": [
+      "define bias and variance clearly",
+      "explain the tradeoff between underfitting and overfitting",
+      "describe diagnostic tools like learning curves and cross-validation",
+      "mention mitigation strategies such as regularization or more data"
+    ]
+  },
+  {
+    "id": "ds-002",
+    "role": "Data Science",
+    "category": "Behavioral",
+    "prompt": "Tell me about a time your data analysis led to a business decision. What was the outcome?",
+    "ideal_answer_points": [
+      "situation with the business context and the data question",
+      "task defining what analysis was needed",
+      "action describing methodology and tools used",
+      "result showing measurable business impact"
+    ]
+  },
+  {
+    "id": "hr-001",
+    "role": "HR",
+    "category": "Behavioral",
+    "prompt": "Why do you want to work for our company specifically?",
+    "ideal_answer_points": [
+      "mention specific research about the company's mission or products",
+      "connect personal values or career goals to the company",
+      "show genuine enthusiasm rather than generic praise",
+      "mention how you can contribute specifically"
+    ]
+  },
+  {
+    "id": "hr-002",
+    "role": "HR",
+    "category": "Behavioral",
+    "prompt": "Tell me about a time you failed at something. What did you learn?",
+    "ideal_answer_points": [
+      "situation describing a genuine failure honestly",
+      "task or expectation that was not met",
+      "action taken to address or recover from the failure",
+      "result showing growth, self-awareness, or changed behavior"
+    ]
+  }
+]
