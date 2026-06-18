@@ -18,24 +18,32 @@ export default function VideoRecorder({ onFinish }) {
   const videoRef = useRef(null);
   const recognitionRef = useRef(null);
   const startTimeRef = useRef(null);
+  const isRecordingRef = useRef(false);
+  const accumulatedRef = useRef("");
 
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
+  const [displayTranscript, setDisplayTranscript] = useState("");
   const [manualTranscript, setManualTranscript] = useState("");
   const [speechSupported, setSpeechSupported] = useState(true);
   const [cameraError, setCameraError] = useState("");
+  const [micListening, setMicListening] = useState(false);
 
   useEffect(() => {
     let stream;
     navigator.mediaDevices
-      ?.getUserMedia({ video: true, audio: false })
+      ?.getUserMedia({ video: true, audio: true })
       .then((s) => {
         stream = s;
         if (videoRef.current) videoRef.current.srcObject = s;
       })
-      .catch(() => setCameraError("Camera access denied or unavailable. You can still type your answer below."));
+      .catch(() =>
+        setCameraError(
+          "Camera/Mic access denied. Please allow permissions and refresh. You can also type your answer below."
+        )
+      );
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSpeechSupported(false);
     } else {
@@ -43,45 +51,106 @@ export default function VideoRecorder({ onFinish }) {
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "en-US";
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => setMicListening(true);
 
       recognition.onresult = (event) => {
-        let finalText = "";
-        for (let i = 0; i < event.results.length; i++) {
-          finalText += event.results[i][0].transcript + " ";
+        let interimText = "";
+        let newFinal = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            newFinal += result[0].transcript + " ";
+          } else {
+            interimText += result[0].transcript;
+          }
         }
-        setTranscript(finalText.trim());
+
+        if (newFinal) {
+          accumulatedRef.current += newFinal;
+        }
+
+        setDisplayTranscript((accumulatedRef.current + interimText).trim());
       };
-      recognition.onerror = () => {
-        /* fail silently; user can still type manually */
+
+      recognition.onerror = (e) => {
+        if (e.error === "no-speech") return;
+        console.warn("[Speech recognition error]", e.error);
+        setMicListening(false);
       };
+
+      recognition.onend = () => {
+        setMicListening(false);
+        if (isRecordingRef.current) {
+          try {
+            recognition.start();
+          } catch (_) {
+            /* already started */
+          }
+        }
+      };
+
       recognitionRef.current = recognition;
     }
 
     return () => {
+      isRecordingRef.current = false;
       stream?.getTracks().forEach((t) => t.stop());
-      recognitionRef.current?.stop();
+      try { recognitionRef.current?.stop(); } catch (_) {}
     };
   }, []);
 
   const startRecording = () => {
-    setTranscript("");
+    accumulatedRef.current = "";
+    setDisplayTranscript("");
     startTimeRef.current = Date.now();
+    isRecordingRef.current = true;
     setIsRecording(true);
-    recognitionRef.current?.start();
+    try {
+      recognitionRef.current?.start();
+    } catch (_) {
+      /* already running */
+    }
   };
 
   const stopRecording = () => {
+    isRecordingRef.current = false;
     setIsRecording(false);
-    recognitionRef.current?.stop();
+    setMicListening(false);
+    try { recognitionRef.current?.stop(); } catch (_) {}
+
     const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
-    const finalTranscript = (transcript || manualTranscript).trim();
+    const finalTranscript = (accumulatedRef.current || displayTranscript || manualTranscript).trim();
     onFinish({ transcript: finalTranscript, durationSeconds });
   };
 
   return (
     <div className="video-recorder">
-      <video ref={videoRef} autoPlay muted playsInline className="video-preview" />
-      {cameraError && <p className="hint-text">{cameraError}</p>}
+      <div style={{ position: "relative", display: "inline-block", width: "100%" }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="video-preview"
+          style={{ width: "100%", maxWidth: "100%", minHeight: "360px", maxHeight: "560px", objectFit: "cover", borderRadius: "12px", border: "1px solid #30363d", background: "#000" }}
+        />
+        {isRecording && (
+          <div style={{ position: "absolute", top: "12px", left: "12px", background: "rgba(248,81,73,0.9)", color: "#fff", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff", display: "inline-block", animation: "pulse 1s infinite" }} />
+            REC
+          </div>
+        )}
+        {isRecording && micListening && (
+          <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(63,185,80,0.9)", color: "#fff", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 700 }}>
+            🎙️ Mic Active
+          </div>
+        )}
+      </div>
+
+      {cameraError && <p className="hint-text" style={{ marginTop: 8 }}>{cameraError}</p>}
 
       <div className="recorder-controls">
         {!isRecording ? (
@@ -90,7 +159,7 @@ export default function VideoRecorder({ onFinish }) {
           </button>
         ) : (
           <button className="btn btn-danger" onClick={stopRecording}>
-            ⏹ Stop & Submit
+            ⏹ Stop &amp; Submit
           </button>
         )}
       </div>
@@ -98,7 +167,7 @@ export default function VideoRecorder({ onFinish }) {
       {!speechSupported && (
         <div className="manual-transcript">
           <p className="hint-text">
-            Speech recognition isn't supported in this browser. Type your answer instead:
+            Speech recognition isn't supported in this browser (use Chrome/Edge). Type your answer instead:
           </p>
           <textarea
             rows={4}
@@ -110,9 +179,20 @@ export default function VideoRecorder({ onFinish }) {
       )}
 
       {speechSupported && isRecording && (
-        <p className="live-transcript">
-          <strong>Live transcript:</strong> {transcript || "(listening...)"}
-        </p>
+        <div className="live-transcript">
+          <strong>🎙️ Live transcript:</strong>{" "}
+          {displayTranscript ? (
+            <span>{displayTranscript}</span>
+          ) : (
+            <span className="hint-text">(speak now... listening)</span>
+          )}
+        </div>
+      )}
+
+      {speechSupported && !isRecording && displayTranscript && (
+        <div className="live-transcript">
+          <strong>Your answer:</strong> {displayTranscript}
+        </div>
       )}
     </div>
   );
