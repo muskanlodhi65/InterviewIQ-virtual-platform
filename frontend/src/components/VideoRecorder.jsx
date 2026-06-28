@@ -20,6 +20,7 @@ export default function VideoRecorder({ onFinish }) {
   const startTimeRef = useRef(null);
   const isRecordingRef = useRef(false);
   const accumulatedRef = useRef("");
+  const onFinishRef = useRef(onFinish);
 
   const [isRecording, setIsRecording] = useState(false);
   const [displayTranscript, setDisplayTranscript] = useState("");
@@ -27,6 +28,10 @@ export default function VideoRecorder({ onFinish }) {
   const [speechSupported, setSpeechSupported] = useState(true);
   const [cameraError, setCameraError] = useState("");
   const [micListening, setMicListening] = useState(false);
+
+  useEffect(() => {
+    onFinishRef.current = onFinish;
+  }, [onFinish]);
 
   useEffect(() => {
     let stream;
@@ -89,6 +94,10 @@ export default function VideoRecorder({ onFinish }) {
           } catch (_) {
             /* already started */
           }
+        } else {
+          const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
+          const finalTranscript = (accumulatedRef.current || displayTranscript || manualTranscript).trim();
+          onFinishRef.current({ transcript: finalTranscript, durationSeconds });
         }
       };
 
@@ -121,9 +130,11 @@ export default function VideoRecorder({ onFinish }) {
     setMicListening(false);
     try { recognitionRef.current?.stop(); } catch (_) {}
 
-    const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
-    const finalTranscript = (accumulatedRef.current || displayTranscript || manualTranscript).trim();
-    onFinish({ transcript: finalTranscript, durationSeconds });
+    if (!recognitionRef.current) {
+      const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
+      const finalTranscript = (accumulatedRef.current || displayTranscript || manualTranscript).trim();
+      onFinish({ transcript: finalTranscript, durationSeconds });
+    }
   };
 
   return (
