@@ -89,14 +89,17 @@ export default function VideoRecorder({ onFinish }) {
       recognition.onend = () => {
         setMicListening(false);
         if (isRecordingRef.current) {
+          // Browser auto-stopped mid-recording — restart to keep listening
           try {
             recognition.start();
           } catch (_) {
-            /* already started */
+            /* already starting */
           }
         } else {
+          // Intentional stop — accumulatedRef has the full transcript
+          // Note: only read from refs here (no stale state closures)
           const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
-          const finalTranscript = (accumulatedRef.current || displayTranscript || manualTranscript).trim();
+          const finalTranscript = accumulatedRef.current.trim();
           onFinishRef.current({ transcript: finalTranscript, durationSeconds });
         }
       };
@@ -125,16 +128,13 @@ export default function VideoRecorder({ onFinish }) {
   };
 
   const stopRecording = () => {
+    // Mark stopped BEFORE calling recognition.stop()
+    // onend fires after one final onresult, then calls onFinish with full transcript
     isRecordingRef.current = false;
     setIsRecording(false);
     setMicListening(false);
     try { recognitionRef.current?.stop(); } catch (_) {}
-
-    if (!recognitionRef.current) {
-      const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
-      const finalTranscript = (accumulatedRef.current || displayTranscript || manualTranscript).trim();
-      onFinish({ transcript: finalTranscript, durationSeconds });
-    }
+    // onFinish is called from recognition.onend (not here) to avoid race condition
   };
 
   return (

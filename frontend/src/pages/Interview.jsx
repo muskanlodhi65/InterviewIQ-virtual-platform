@@ -39,17 +39,15 @@ export default function Interview() {
   };
 
   const handleAnswerFinished = async ({ transcript, durationSeconds }) => {
-    if (!transcript.trim()) {
-      setError("No speech was captured. Please try again and speak clearly, or type your answer.");
-      return;
-    }
+    // Allow empty transcript — user may have had mic issues
+    // Backend will score 0 for content but at least it won't hard-block
     setSubmitting(true);
     setError("");
     try {
       const question = session.questions[currentIndex];
       const feedback = await submitAnswer(session.session_id, {
         question_id: question.id,
-        transcript,
+        transcript: transcript || "",
         duration_seconds: durationSeconds,
       });
       setLastFeedback(feedback);
