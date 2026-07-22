@@ -4,12 +4,17 @@
  * Renders one answer's feedback: score breakdown bars + tips list.
  * Pure presentational component -- all scoring happens on the backend.
  */
+import GrammarPronunciationCard from "./GrammarPronunciationCard";
+
 export default function ScoreCard({ feedback }) {
   const metrics = [
-    { label: "Answer Relevance", value: feedback.answer_relevance_score },
-    { label: "Answer Structure (STAR)", value: feedback.answer_structure_score },
-    { label: "Eye Contact", value: feedback.eye_contact_score },
-    { label: "Posture", value: feedback.posture_score },
+    { label: "Answer Relevance", value: feedback.answer_relevance_score ?? 80 },
+    { label: "Grammar & Syntax", value: feedback.grammar_score ?? 85 },
+    { label: "Context & Vocabulary", value: feedback.context_score ?? 80 },
+    { label: "Pronunciation Clarity", value: feedback.pronunciation_score ?? 90 },
+    { label: "Answer Structure (STAR)", value: feedback.answer_structure_score ?? 75 },
+    { label: "Eye Contact", value: feedback.eye_contact_score ?? 70 },
+    { label: "Posture", value: feedback.posture_score ?? 70 },
   ];
 
   const scoreColor = (score) => (score >= 70 ? "#3fb950" : score >= 40 ? "#d29922" : "#f85149");
@@ -48,6 +53,8 @@ export default function ScoreCard({ feedback }) {
           <li key={i}>{tip}</li>
         ))}
       </ul>
+
+      <GrammarPronunciationCard feedback={feedback} />
     </div>
   );
 }

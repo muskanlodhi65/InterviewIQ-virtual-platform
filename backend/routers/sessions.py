@@ -29,7 +29,7 @@ from models import (
     SessionResult,
 )
 from routers.auth import get_current_user
-from services import cv_analysis, nlp_scoring, speech_analysis
+from services import cv_analysis, nlp_scoring, speech_analysis, language_analysis
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -55,6 +55,10 @@ def _generate_tips(feedback: AnswerFeedback) -> List[str]:
         tips.append("Work on maintaining more consistent eye contact with the camera.")
     if feedback.posture_score < 65:
         tips.append("Sit upright and keep your shoulders back — posture affects perceived confidence.")
+    if feedback.grammar_score < 75:
+        tips.append("Review your grammar feedback: practice correct subject-verb alignment and verb tenses.")
+    if feedback.context_score < 70:
+        tips.append("Incorporate more industry-specific technical vocabulary to strengthen your contextual relevance.")
     if feedback.answer_structure_score < 50:
         tips.append("Structure your answer with the STAR method: Situation, Task, Action, Result.")
     if feedback.answer_relevance_score < 50:
@@ -66,11 +70,13 @@ def _generate_tips(feedback: AnswerFeedback) -> List[str]:
 
 def _overall_score(feedback: AnswerFeedback) -> float:
     weights = {
-        "answer_relevance_score": 0.30,
-        "answer_structure_score": 0.20,
-        "eye_contact_score": 0.15,
-        "posture_score": 0.15,
-        "speaking_pace_score": 0.20,  # derived below, not a raw field
+        "answer_relevance_score": 0.25,
+        "grammar_score": 0.20,
+        "context_score": 0.15,
+        "answer_structure_score": 0.15,
+        "eye_contact_score": 0.10,
+        "posture_score": 0.10,
+        "speaking_pace_score": 0.05,
     }
     ideal_low, ideal_high = 120, 150
     pace = feedback.speaking_pace_wpm
@@ -84,6 +90,8 @@ def _overall_score(feedback: AnswerFeedback) -> float:
 
     score = (
         feedback.answer_relevance_score * weights["answer_relevance_score"]
+        + feedback.grammar_score * weights["grammar_score"]
+        + feedback.context_score * weights["context_score"]
         + feedback.answer_structure_score * weights["answer_structure_score"]
         + feedback.eye_contact_score * weights["eye_contact_score"]
         + feedback.posture_score * weights["posture_score"]
@@ -133,6 +141,7 @@ async def submit_answer(
     )
     speech_result = speech_analysis.analyze_speech(payload.transcript, payload.duration_seconds)
     nlp_result = nlp_scoring.score_answer(payload.transcript, question.ideal_answer_points)
+    lang_result = language_analysis.perform_full_language_analysis(payload.transcript)
 
     feedback = AnswerFeedback(
         question_id=payload.question_id,
@@ -142,6 +151,11 @@ async def submit_answer(
         posture_score=cv_result["posture_score"],
         answer_relevance_score=nlp_result["answer_relevance_score"],
         answer_structure_score=nlp_result["answer_structure_score"],
+        grammar_score=lang_result["grammar_score"],
+        pronunciation_score=lang_result["pronunciation_score"],
+        context_score=lang_result["context_score"],
+        grammar_errors=lang_result["grammar_errors"],
+        pronunciation_tips=lang_result["pronunciation_tips"],
         overall_score=0.0,
         tips=[],
     )

@@ -80,6 +80,11 @@ class AnswerFeedback(BaseModel):
     posture_score: float           # 0-100
     answer_relevance_score: float  # 0-100
     answer_structure_score: float  # 0-100 (STAR-method adherence, etc.)
+    grammar_score: float = 85.0    # 0-100
+    pronunciation_score: float = 90.0 # 0-100
+    context_score: float = 80.0    # 0-100
+    grammar_errors: List[dict] = []
+    pronunciation_tips: List[dict] = []
     overall_score: float           # 0-100
     tips: List[str]
 
