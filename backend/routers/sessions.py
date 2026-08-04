@@ -29,7 +29,7 @@ from models import (
     SessionResult,
 )
 from routers.auth import get_current_user
-from services import cv_analysis, nlp_scoring, speech_analysis, language_analysis
+from services import cv_analysis, nlp_scoring, speech_analysis, language_analysis, llm_analysis
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -141,7 +141,7 @@ async def submit_answer(
     )
     speech_result = speech_analysis.analyze_speech(payload.transcript, payload.duration_seconds)
     nlp_result = nlp_scoring.score_answer(payload.transcript, question.ideal_answer_points)
-    lang_result = language_analysis.perform_full_language_analysis(payload.transcript)
+    lang_result = llm_analysis.analyze_with_llm(payload.transcript, question.prompt)
 
     feedback = AnswerFeedback(
         question_id=payload.question_id,
