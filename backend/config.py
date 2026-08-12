@@ -7,6 +7,9 @@ app runs out of the box even before you've configured MongoDB Atlas.
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Settings:
