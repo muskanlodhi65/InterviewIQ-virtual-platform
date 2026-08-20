@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createSession, getRoles, submitAnswer } from "../api/client";
 import VideoRecorder from "../components/VideoRecorder";
@@ -16,6 +16,7 @@ export default function Interview() {
   const [lastFeedback, setLastFeedback] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
     getRoles()
@@ -25,6 +26,42 @@ export default function Interview() {
       })
       .catch(() => setError("Could not load roles. Is the backend running?"));
   }, []);
+
+  // Voice AI Agent: Speak question when current question changes
+  const speakQuestion = (text) => {
+    if (!("speechSynthesis" in window)) return;
+
+    window.speechSynthesis.cancel(); // Stop any ongoing speech
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95; // Slightly slower, professional interviewer pace
+    utterance.pitch = 1.0;
+
+    // Pick a natural English voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice = voices.find(
+      (v) => (v.lang.includes("en-US") || v.lang.includes("en-GB")) && v.name.includes("Natural")
+    ) || voices.find((v) => v.lang.startsWith("en"));
+
+    if (englishVoice) utterance.voice = englishVoice;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    if (session && session.questions[currentIndex] && !lastFeedback) {
+      const prompt = session.questions[currentIndex].prompt;
+      // Short delay for natural transition
+      const timer = setTimeout(() => {
+        speakQuestion(prompt);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [session, currentIndex, lastFeedback]);
 
   const startSession = async () => {
     setError("");
@@ -39,8 +76,7 @@ export default function Interview() {
   };
 
   const handleAnswerFinished = async ({ transcript, durationSeconds }) => {
-    // Allow empty transcript — user may have had mic issues
-    // Backend will score 0 for content but at least it won't hard-block
+    window.speechSynthesis.cancel(); // Stop speaking if user starts submitting
     setSubmitting(true);
     setError("");
     try {
@@ -59,6 +95,7 @@ export default function Interview() {
   };
 
   const nextQuestion = () => {
+    window.speechSynthesis.cancel();
     setLastFeedback(null);
     if (currentIndex + 1 < session.questions.length) {
       setCurrentIndex(currentIndex + 1);
@@ -107,7 +144,26 @@ export default function Interview() {
         Question {currentIndex + 1} of {session.questions.length}
       </div>
       <h2 className="question-prompt">{question.prompt}</h2>
-      <span className="question-category">{question.category}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+        <span className="question-category">{question.category}</span>
+        <button
+          onClick={() => speakQuestion(question.prompt)}
+          style={{
+            background: isSpeaking ? "#238636" : "rgba(255,255,255,0.08)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.15)",
+            padding: "4px 12px",
+            borderRadius: "16px",
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
+          {isSpeaking ? "🔊 AI Speaking..." : "🔊 Replay Question"}
+        </button>
+      </div>
 
       {!lastFeedback && <VideoRecorder onFinish={handleAnswerFinished} />}
 
