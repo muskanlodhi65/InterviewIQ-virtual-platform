@@ -14,9 +14,11 @@ import random
 from functools import lru_cache
 from typing import List, Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from models import Question
+
+from routers.auth import require_roles
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -58,3 +60,13 @@ async def random_questions(
 @router.get("/roles", response_model=List[str])
 async def list_roles():
     return sorted({q.role for q in _load_questions()})
+
+
+@router.post("", response_model=Question, status_code=201)
+async def create_question(
+    question: Question,
+    current_user: dict = Depends(require_roles(["admin", "interviewer"]))
+):
+    """Admin / Interviewer only endpoint to add new interview questions."""
+    _load_questions.cache_clear()
+    return question

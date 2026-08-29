@@ -25,9 +25,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-def _create_access_token(user_id: str) -> str:
+def _create_access_token(user_id: str, role: str = "candidate") -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRY_MINUTES)
-    payload = {"sub": user_id, "exp": expire}
+    payload = {"sub": user_id, "role": role, "exp": expire}
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -52,6 +52,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     return user
 
 
+def require_roles(allowed_roles: list[str]):
+    """Role-Based Access Control dependency factory."""
+    async def role_checker(current_user: dict = Depends(get_current_user)):
+        user_role = current_user.get("role", "candidate")
+        if user_role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required role: {allowed_roles}, your role: {user_role}"
+            )
+        return current_user
+    return role_checker
+
+
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def signup(payload: UserSignup):
     db = get_db()
@@ -62,14 +75,20 @@ async def signup(payload: UserSignup):
     user_doc = {
         "name": payload.name,
         "email": payload.email,
+        "role": payload.role,
         "hashed_password": pwd_context.hash(payload.password),
     }
     created = await db["users"].insert_one(user_doc)
-    token = _create_access_token(created["_id"])
+    token = _create_access_token(created["_id"], created.get("role", "candidate"))
 
     return TokenResponse(
         access_token=token,
-        user=UserPublic(id=created["_id"], name=created["name"], email=created["email"]),
+        user=UserPublic(
+            id=created["_id"],
+            name=created["name"],
+            email=created["email"],
+            role=created.get("role", "candidate")
+        ),
     )
 
 
@@ -80,13 +99,19 @@ async def login(payload: UserLogin):
     if not user or not pwd_context.verify(payload.password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = _create_access_token(user["_id"])
+    user_role = user.get("role", "candidate")
+    token = _create_access_token(user["_id"], user_role)
     return TokenResponse(
         access_token=token,
-        user=UserPublic(id=user["_id"], name=user["name"], email=user["email"]),
+        user=UserPublic(id=user["_id"], name=user["name"], email=user["email"], role=user_role),
     )
 
 
 @router.get("/me", response_model=UserPublic)
 async def read_current_user(current_user: dict = Depends(get_current_user)):
-    return UserPublic(id=current_user["_id"], name=current_user["name"], email=current_user["email"])
+    return UserPublic(
+        id=current_user["_id"],
+        name=current_user["name"],
+        email=current_user["email"],
+        role=current_user.get("role", "candidate")
+    )

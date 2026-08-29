@@ -33,8 +33,8 @@ export function getAuthToken() {
 }
 
 // --- Auth ---
-export const signup = (name, email, password) =>
-  client.post("/auth/signup", { name, email, password }).then((r) => r.data);
+export const signup = (name, email, password, role = "candidate") =>
+  client.post("/auth/signup", { name, email, password, role }).then((r) => r.data);
 
 export const login = (email, password) =>
   client.post("/auth/login", { email, password }).then((r) => r.data);

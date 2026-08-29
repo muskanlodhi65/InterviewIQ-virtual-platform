@@ -34,7 +34,25 @@ export default function Dashboard() {
       <div className="dashboard-header">
         <div>
           <h2>Welcome back{user ? `, ${user.name}` : ""}</h2>
-          <p className="hint-text">Track your interview practice over time</p>
+          <p className="hint-text">
+            Track your interview practice over time
+            {user?.role && (
+              <span
+                style={{
+                  marginLeft: "10px",
+                  background: user.role === "admin" ? "#f85149" : user.role === "interviewer" ? "#d29922" : "#388bfd",
+                  color: "#fff",
+                  padding: "2px 10px",
+                  borderRadius: "12px",
+                  fontSize: "0.75rem",
+                  fontWeight: "bold",
+                  textTransform: "uppercase",
+                }}
+              >
+                {user.role}
+              </span>
+            )}
+          </p>
         </div>
         <button className="btn btn-secondary" onClick={logout}>
           Log out

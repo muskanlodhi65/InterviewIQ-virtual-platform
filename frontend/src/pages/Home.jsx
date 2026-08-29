@@ -8,6 +8,7 @@ export default function Home() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("candidate"); // "candidate" | "interviewer" | "admin"
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -16,8 +17,9 @@ export default function Home() {
     setError("");
     setLoading(true);
     try {
-      const data = mode === "login" ? await login(email, password) : await signup(name, email, password);
+      const data = mode === "login" ? await login(email, password) : await signup(name, email, password, role);
       setAuthToken(data.access_token);
+      localStorage.setItem("interviewiq_user", JSON.stringify(data.user));
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.detail || "Something went wrong. Please try again.");
@@ -43,7 +45,36 @@ export default function Home() {
 
         <form onSubmit={handleSubmit}>
           {mode === "signup" && (
-            <input type="text" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+            <>
+              <input type="text" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <div style={{ marginBottom: "1rem", textAlign: "left" }}>
+                <label style={{ fontSize: "0.85rem", color: "#8b949e", display: "block", marginBottom: "4px" }}>
+                  Select Account Role:
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "#fff",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                  }}
+                >
+                  <option value="candidate" style={{ background: "#161b22" }}>
+                    🎯 Candidate (Practice Mock Interviews)
+                  </option>
+                  <option value="interviewer" style={{ background: "#161b22" }}>
+                    👨‍💼 Interviewer (Practice & Evaluate Candidates)
+                  </option>
+                  <option value="admin" style={{ background: "#161b22" }}>
+                    🔑 Admin (Full System & Question Management)
+                  </option>
+                </select>
+              </div>
+            </>
           )}
           <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <input

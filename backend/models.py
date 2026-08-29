@@ -22,6 +22,7 @@ class UserSignup(BaseModel):
     name: str
     email: EmailStr
     password: str = Field(min_length=6)
+    role: str = "candidate"  # "candidate", "interviewer", or "admin"
 
 
 class UserLogin(BaseModel):
@@ -33,6 +34,7 @@ class UserPublic(BaseModel):
     id: str
     name: str
     email: EmailStr
+    role: str = "candidate"
 
 
 class TokenResponse(BaseModel):
