@@ -70,9 +70,38 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Link to="/interview" className="btn btn-primary btn-large">
-        + Start New Mock Interview
-      </Link>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <Link to="/interview" className="btn btn-primary btn-large" style={{ flex: 1, textAlign: "center" }}>
+          🎯 Start Candidate Practice Session
+        </Link>
+        {(user?.role === "interviewer" || user?.role === "admin") && (
+          <button
+            className="btn btn-secondary btn-large"
+            style={{ flex: 1, background: "rgba(210, 153, 34, 0.15)", border: "1px solid #d29922", color: "#f0b72f" }}
+            onClick={() => alert("👨‍💼 Interviewer Evaluation Portal: You can conduct mock interview sessions and evaluate candidate recordings.")}
+          >
+            👨‍💼 Interviewer Evaluation Portal
+          </button>
+        )}
+      </div>
+
+      {user?.role === "interviewer" && (
+        <div style={{ background: "rgba(210, 153, 34, 0.08)", border: "1px solid rgba(210, 153, 34, 0.25)", padding: "1rem 1.2rem", borderRadius: "10px", marginBottom: "1.5rem" }}>
+          <h4 style={{ color: "#f0b72f", margin: "0 0 6px 0" }}>👨‍💼 Interviewer Mode Active</h4>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#8b949e" }}>
+            You can practice asking questions, evaluate candidate AI disfluencies, and test custom role rubrics.
+          </p>
+        </div>
+      )}
+
+      {user?.role === "admin" && (
+        <div style={{ background: "rgba(248, 81, 73, 0.08)", border: "1px solid rgba(248, 81, 73, 0.25)", padding: "1rem 1.2rem", borderRadius: "10px", marginBottom: "1.5rem" }}>
+          <h4 style={{ color: "#f85149", margin: "0 0 6px 0" }}>🔑 Admin Portal Controls</h4>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#8b949e" }}>
+            Full system control enabled: Create custom questions bank, configure Gemini LLM prompts, and manage user roles.
+          </p>
+        </div>
+      )}
 
       {error && <p className="error-text">{error}</p>}
 
