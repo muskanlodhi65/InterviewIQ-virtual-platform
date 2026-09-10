@@ -38,6 +38,8 @@ class Settings:
     # the whole app is demoable on day one.
     USE_REAL_CV_MODEL: bool = os.environ.get("USE_REAL_CV_MODEL", "false").lower() == "true"
     USE_REAL_SPEECH_MODEL: bool = os.environ.get("USE_REAL_SPEECH_MODEL", "false").lower() == "true"
+    USE_REAL_NLP_SCORER: bool = os.environ.get("USE_REAL_NLP_SCORER", "false").lower() == "true"
+
     # --- LLM API ---
     GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
 
