@@ -72,7 +72,7 @@ export default function Dashboard() {
 
       <div style={{ display: "flex", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <Link to="/interview" className="btn btn-primary btn-large" style={{ flex: 1, textAlign: "center" }}>
-          🎯 Start Candidate Practice Session
+          🎯 Start Tailored Mock Interview (Resume & JD)
         </Link>
         {(user?.role === "interviewer" || user?.role === "admin") && (
           <button

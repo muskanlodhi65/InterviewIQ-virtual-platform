@@ -45,8 +45,13 @@ export const getMe = () => client.get("/auth/me").then((r) => r.data);
 export const getRoles = () => client.get("/questions/roles").then((r) => r.data);
 
 // --- Sessions ---
-export const createSession = (role, numQuestions) =>
-  client.post("/sessions", { role, num_questions: numQuestions }).then((r) => r.data);
+export const createSession = (payload, maybeNumQuestions) => {
+  const body =
+    typeof payload === "string"
+      ? { role: payload, num_questions: maybeNumQuestions || 3 }
+      : payload;
+  return client.post("/sessions", body).then((r) => r.data);
+};
 
 export const submitAnswer = (sessionId, payload) =>
   client.post(`/sessions/${sessionId}/answers`, payload).then((r) => r.data);

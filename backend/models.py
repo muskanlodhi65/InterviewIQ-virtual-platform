@@ -53,6 +53,7 @@ class Question(BaseModel):
     category: str        # e.g. "Behavioral", "Technical", "System Design"
     prompt: str
     ideal_answer_points: List[str] = []
+    source_context: Optional[str] = None  # e.g. "Resume Project Deep-Dive", "Target JD Alignment"
 
 
 # =========================================================================
@@ -61,7 +62,11 @@ class Question(BaseModel):
 
 class SessionCreate(BaseModel):
     role: str
-    num_questions: int = 5
+    num_questions: int = 3
+    resume_text: Optional[str] = None
+    job_description: Optional[str] = None
+    company_name: Optional[str] = None
+    interview_type: Optional[str] = "Mixed"
 
 
 class SessionAnswer(BaseModel):

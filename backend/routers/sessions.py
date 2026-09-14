@@ -30,6 +30,7 @@ from models import (
 )
 from routers.auth import get_current_user
 from services import cv_analysis, nlp_scoring, speech_analysis, language_analysis, llm_analysis
+from services.question_generator import generate_tailored_questions
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -102,19 +103,37 @@ def _overall_score(feedback: AnswerFeedback) -> float:
 
 @router.post("", response_model=dict)
 async def create_session(payload: SessionCreate, current_user: dict = Depends(get_current_user)):
-    pool = [q for q in _load_questions() if q.role.lower() == payload.role.lower()]
-    if not pool:
-        raise HTTPException(status_code=404, detail=f"No questions found for role '{payload.role}'")
+    # Check if Resume or Job Description was supplied
+    has_resume = bool(payload.resume_text and payload.resume_text.strip())
+    has_jd = bool(payload.job_description and payload.job_description.strip())
 
-    sample_size = min(payload.num_questions, len(pool))
-    selected = random.sample(pool, sample_size)
+    if has_resume or has_jd:
+        selected = generate_tailored_questions(
+            role=payload.role,
+            num_questions=payload.num_questions,
+            resume_text=payload.resume_text or "",
+            job_description=payload.job_description or "",
+            company_name=payload.company_name or "",
+            interview_type=payload.interview_type or "Mixed",
+        )
+    else:
+        pool = [q for q in _load_questions() if q.role.lower() == payload.role.lower()]
+        if not pool:
+            raise HTTPException(status_code=404, detail=f"No questions found for role '{payload.role}'")
+        sample_size = min(payload.num_questions, len(pool))
+        selected = random.sample(pool, sample_size)
 
     db = get_db()
     session_doc = {
         "_id": str(uuid.uuid4()),
         "user_id": current_user["_id"],
         "role": payload.role,
+        "resume_text": payload.resume_text or "",
+        "job_description": payload.job_description or "",
+        "company_name": payload.company_name or "",
+        "interview_type": payload.interview_type or "Mixed",
         "question_ids": [q.id for q in selected],
+        "questions": [q.dict() for q in selected],
         "created_at": datetime.utcnow().isoformat(),
         "answers": [],
     }
@@ -132,7 +151,13 @@ async def submit_answer(
     if not session_doc or session_doc["user_id"] != current_user["_id"]:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    question = next((q for q in _load_questions() if q.id == payload.question_id), None)
+    # Look up in session's customized questions first, fallback to static bank
+    question_dict = next((q for q in session_doc.get("questions", []) if q["id"] == payload.question_id), None)
+    if question_dict:
+        question = Question(**question_dict)
+    else:
+        question = next((q for q in _load_questions() if q.id == payload.question_id), None)
+
     if question is None:
         raise HTTPException(status_code=404, detail="Question not found")
 
